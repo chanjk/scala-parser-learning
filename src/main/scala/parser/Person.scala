@@ -53,7 +53,7 @@ object Person {
     * scala> isErrorResult(firstNameParser("abc"))
     * res1: Boolean = true
     */
-  def firstNameParser: Parser[String] = ???
+  def firstNameParser: Parser[String] = charsToString(cons(upper)(list(lower)))
 
   /**
     * Write a parser for Person.surname
@@ -74,7 +74,11 @@ object Person {
     * scala> isErrorResult(surnameParser("abc"))
     * res3: Boolean = true
     */
-  def surnameParser: Parser[String] = ???
+  def surnameParser: Parser[String] = charsToString(for {
+    c <- upper
+    cs <- thisMany(5)(lower)
+    ds <- list(lower)
+  } yield (c :: cs ++ ds))
 
   /**
     * Write a parser for Person.smoker
@@ -92,7 +96,14 @@ object Person {
     * scala> isErrorResult(smokerParser("abc"))
     * res2: Boolean = true
     */
-  def smokerParser: Parser[Boolean] = ???
+  def smokerParser: Parser[Boolean] = {
+    def solution1: Parser[Boolean] = or(is('y') map (_ => true))(is('n') map (_ => false))
+
+    // Using [[cats.Functor#as]]
+    def solution2: Parser[Boolean] = or(is('y') as true)(is('n') as false)
+
+    solution1
+  }
 
   /**
     * Write part of a parser for Person.phone
@@ -112,7 +123,7 @@ object Person {
     * scala> phoneBodyParser("a123-456")
     * res2: parser.ParseResult[String] = Result >a123-456<
     */
-  def phoneBodyParser: Parser[String] = ???
+  def phoneBodyParser: Parser[String] = charsToString(list(or(digit)(or(is('.'))(is('-')))))
 
   /**
     * Write a parser for Person.phone
@@ -133,7 +144,21 @@ object Person {
     * scala> isErrorResult(phoneParser("a123-456"))
     * res3: Boolean = true
     */
-  def phoneParser: Parser[String] = ???
+  def phoneParser: Parser[String] = {
+    def solution1: Parser[String] = for {
+      d <- digit
+      body <- phoneBodyParser
+      _ <- is('#')
+    } yield d +: body
+
+    // Using [[cats.Applicative#productL]]
+    def solution2: Parser[String] = for {
+      d <- digit
+      body <- phoneBodyParser productL is('#')
+    } yield d +: body
+
+    solution1
+  }
 
   /**
     * Write a parser for Person
@@ -187,7 +212,47 @@ object Person {
     * scala> personParser("123  Fred   Clarkson    y     123-456.789#")
     * res11: parser.ParseResult[parser.Person] = Result >< Person(123,Fred,Clarkson,true,123-456.789)
     */
-  def personParser: Parser[Person] = ???
+  def personParser: Parser[Person] = {
+    def solution1: Parser[Person] = for {
+      age <- ageParser
+      firstName <- spaces1 productR firstNameParser
+      surname <- spaces1 productR surnameParser
+      smoker <- spaces1 productR smokerParser
+      phone <- spaces1 productR phoneParser
+    } yield Person(age, firstName, surname, smoker, phone)
+
+    // Using [[mapN]]
+    def solution2: Parser[Person] =
+      (
+        ageParser,
+        spaces1 productR firstNameParser,
+        spaces1 productR surnameParser,
+        spaces1 productR smokerParser,
+        spaces1 productR phoneParser
+      ) mapN Person.apply
+
+    // Using [[trimStart]] instead of [[cats.Apply#productR]]
+    def solution3: Parser[Person] =
+      (
+        ageParser,
+        trimStart(firstNameParser),
+        trimStart(surnameParser),
+        trimStart(smokerParser),
+        trimStart(phoneParser)
+      ) mapN Person.apply
+
+    // Using [[trimEnd]]
+    def solution4: Parser[Person] =
+      (
+        trimEnd(ageParser),
+        trimEnd(firstNameParser),
+        trimEnd(surnameParser),
+        trimEnd(smokerParser),
+        phoneParser
+      ) mapN Person.apply
+
+    solution1
+  }
 
   /**
     * Did you repeat yourself in [[personParser]]? This might help:
