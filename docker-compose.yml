@@ -1,0 +1,16 @@
+version: "3.8"
+services:
+  dev:
+    build: .
+    working_dir: /code
+    volumes:
+      - .:/code
+      - coursier-cache:/root/.cache/coursier
+      - ivy-cache:/root/.ivy2/cache
+      - sbt-cache:/root/.sbt
+    command: sh
+
+volumes:
+  coursier-cache:
+  ivy-cache:
+  sbt-cache:

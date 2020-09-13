@@ -1,5 +1,7 @@
 .bloop
+.devcontainer.json
 .idea
 .metals
+.vscode
 target/
 metals.sbt

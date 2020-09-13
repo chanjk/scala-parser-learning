@@ -1,4 +1,4 @@
-scalaVersion := "2.13.1"
+scalaVersion := "2.13.3"
 
 val CatsVersion = "2.1.1"
 val ScalaTestVersion = "3.1.2"
