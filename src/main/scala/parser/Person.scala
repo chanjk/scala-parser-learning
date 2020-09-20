@@ -147,9 +147,9 @@ object Person {
     *           [[smokerParser]],
     *           [[phoneParser]]
     *
-    * Tip: Follow-on exercise: Use [[ap]] and [[pure]] instead of [[flatMap]]
+    * Tip: Follow-on exercise: Use [[mapN]] (provided by `cats`) instead of [[flatMap]]
     *
-    * Tip: Follow-on exercise: Use [[apGobble]] (defined below) instead of [[ap]] and [[cats.Apply#productR]]
+    * Tip: Follow-on exercise: Use [[trimStart]] or [[trimEnd]] (defined below) instead of [[cats.Apply#productR]]
     *
     * scala> isErrorResult(personParser(""))
     * res0: Boolean = true
@@ -192,19 +192,10 @@ object Person {
   /**
     * Did you repeat yourself in [[personParser]]? This might help:
     */
-  private def flatMapGobble[A, B](p: Parser[A])(f: A => Parser[B]): Parser[B] = (p productL spaces1) flatMap f
+  private def trimStart[A](p: Parser[A]): Parser[A] = spaces1 productR p
 
   /**
     * or maybe this
     */
-  private def apGobble[A, B](pf: Parser[A => B])(p: Parser[A]): Parser[B] = pf ap (spaces1 productR p)
-
-  /**
-    * or if you prefer infix notation
-    */
-  private implicit class ParserOps[A](pa: Parser[A]) {
-    def flatMapGobble[B](f: A => Parser[B]): Parser[B] = (pa productL spaces1) flatMap f
-
-    def apGobble[B, C](pb: Parser[B])(implicit ev: A <:< (B => C)): Parser[C] = pa ap (spaces1 productR pb)
-  }
+  private def trimEnd[A](p: Parser[A]): Parser[A] = p productL spaces1
 }
